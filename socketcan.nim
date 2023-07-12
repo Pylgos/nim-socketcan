@@ -23,7 +23,6 @@ const
   RtrFlagPos = 30
   FrameFormatFlagPos = 31
 
-
 proc ioctl(fd: cint, request: culong): cint {.importc, header: "<sys/ioctl.h>", varargs.}
 
 type
@@ -58,9 +57,14 @@ proc `==`*(a, b: CANId): bool {.borrow.}
 proc hash*(a: CANId): Hash {.borrow.}
 proc `$`*(a: CANId): string {.borrow.}
 
-proc `=destroy`(self: CANSocketObj) =
-  if self.isOpened:
-    self.handle.close()
+when (NimMajor, NimMinor) > (1, 6):
+  proc `=destroy`(self: CANSocketObj) =
+    if self.isOpened:
+      self.handle.close()
+else:
+  proc `=destroy`(self: var CANSocketObj) =
+    if self.isOpened:
+      self.handle.close()
 
 proc close*(self: CANSocket) =
   if self.isOpened:
