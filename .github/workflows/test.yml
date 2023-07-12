@@ -1,0 +1,18 @@
+name: test
+on: [push]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+    - uses: jiro4989/setup-nim-action@v1
+      with:
+        nim-version: '1.6.12'
+        repo-token: ${{ secrets.GITHUB_TOKEN }}
+    - name: setup virtual CAN driver
+      run: |
+        sudo modprobe vcan
+        sudo ip link add dev vcan0 type vcan
+        sudo ip link set vcan0 up
+    - run: nimble test -y
