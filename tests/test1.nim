@@ -41,3 +41,17 @@ test "read write (async)":
     check frameReceived.get() == frame
 
   waitFor test()
+
+test "filter":
+  let can0 = createCANSocket("vcan0")
+  let can1 = createCANSocket("vcan0")
+
+  var rfilter = newSeqOfCap[can_filter](1)
+  rfilter.add(can_filter_extended(4321, invert = true))
+  rfilter.add(can_filter_extended(1234))
+  check can1.set_filter(rfilter)
+  check can0.write(frame_filtered)
+  check can0.write(frame)
+  let frameReceived = can1.read()
+  check frameReceived.isSome()
+  check frameReceived.get() == frame

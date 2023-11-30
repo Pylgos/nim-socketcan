@@ -8,6 +8,14 @@ let
   FIONBIO {.importc, header: "<sys/ioctl.h>"}: cint
   SOL_CAN_RAW {.importc, header: "<linux/can/raw.h>"}: cint
   CAN_RAW_LOOPBACK {.importc, header: "<linux/can/raw.h>"}: cint
+  CAN_RAW_FILTER {.importc, header: "<linux/can/raw.h>"}: cint
+  CAN_INV_FILTER {.importc, header: "<linux/can.h>"}: cuint
+  CAN_EFF_FLAG* {.importc, header: "<linux/can.h>"}: cuint
+  CAN_RTR_FLAG* {.importc, header: "<linux/can.h>"}: cuint
+  CAN_ERR_FLAG* {.importc, header: "<linux/can.h>"}: cuint
+  CAN_SFF_MASK* {.importc, header: "<linux/can.h>"}: cuint
+  CAN_EFF_MASK* {.importc, header: "<linux/can.h>"}: cuint
+  CAN_ERR_MASK* {.importc, header: "<linux/can.h>"}: cuint
 
 type
   sockaddr_can {.importc: "struct sockaddr_can", header: "<linux/can.h>"} = object
@@ -18,6 +26,10 @@ type
     can_id {.importc.}: uint32
     len {.importc.}: uint8
     data {.importc.}: array[8, uint8]
+
+  can_filter* {.importc: "struct can_filter", header: "<linux/can.h>"} = object
+    can_id {.importc.}: uint32
+    can_mask {.importc.}: uint32
 
 const
   IdSlice = 0..28
@@ -150,10 +162,38 @@ proc parseRawFrame(raw: can_frame): CANFrame =
   result.len = raw.len.int
   result.data = raw.data
 
+template get_handle(self: CANSocket | AsyncCANSocket): SocketHandle =
+  result = when self is AsyncCANSocket: self.handle.SocketHandle else: self.handle
+
 proc set_loopback*(self: CANSocket | AsyncCANSocket, enable: bool) =
-  let val: int = if enable: 1 else: 0
-  let handle = when self is AsyncCANSocket: self.handle.SocketHandle else: self.handle
+  let
+    val: int = if enable: 1 else: 0
+    handle = self.get_handle()
   setSockOptInt(handle, SOL_CAN_RAW.int, CAN_RAW_LOOPBACK.int, val)
+
+proc can_filter_standard*(can_id: uint16, invert = false): can_filter =
+  result = can_filter(can_id: can_id.uint32,
+      can_mask: CAN_EFF_FLAG or CAN_RTR_FLAG or CAN_SFF_MASK)
+  if invert:
+    result.can_id = result.can_id or CAN_INV_FILTER
+
+proc can_filter_extended*(can_id: uint32, invert = false): can_filter =
+  result = can_filter(can_id: can_id or CAN_EFF_FLAG,
+      can_mask: CAN_EFF_FLAG or CAN_RTR_FLAG or CAN_EFF_MASK)
+  if invert:
+    result.can_id = result.can_id or CAN_INV_FILTER
+
+proc set_filter*(self: CANSocket | AsyncCANSocket, rfilter: openArray[can_filter]): bool =
+  let
+    handle = self.get_handle()
+    filterLen = (rfilter[0].sizeof * rfilter.len).SockLen
+  let res = setsockopt(handle, SOL_CAN_RAW.cint, CAN_RAW_FILTER.cint,
+      addr rfilter[0], filterLen)
+  if res != 0:
+    let errmsg = strerror(errno)
+    echo errmsg
+  else:
+    result = true
 
 proc read*(self: CANSocket): Option[CANFrame] =
   var raw: can_frame
