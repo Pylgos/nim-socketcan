@@ -2,32 +2,32 @@ import std/[asyncdispatch, os, nativesockets, posix, strformat, bitops, options,
 
 
 let
-  PF_CAN {.importc, header: "<linux/can.h>"}: cint
-  CAN_RAW {.importc, header: "<linux/can.h>"}: cint
-  AF_CAN {.importc, header: "<sys/socket.h>"}: cushort
-  FIONBIO {.importc, header: "<sys/ioctl.h>"}: cint
-  SOL_CAN_RAW {.importc, header: "<linux/can/raw.h>"}: cint
-  CAN_RAW_LOOPBACK {.importc, header: "<linux/can/raw.h>"}: cint
-  CAN_RAW_FILTER {.importc, header: "<linux/can/raw.h>"}: cint
-  CAN_INV_FILTER {.importc, header: "<linux/can.h>"}: cuint
-  CAN_EFF_FLAG* {.importc, header: "<linux/can.h>"}: cuint
-  CAN_RTR_FLAG* {.importc, header: "<linux/can.h>"}: cuint
-  CAN_ERR_FLAG* {.importc, header: "<linux/can.h>"}: cuint
-  CAN_SFF_MASK* {.importc, header: "<linux/can.h>"}: cuint
-  CAN_EFF_MASK* {.importc, header: "<linux/can.h>"}: cuint
-  CAN_ERR_MASK* {.importc, header: "<linux/can.h>"}: cuint
+  PF_CAN {.importc, header: "<linux/can.h>".}: cint
+  CAN_RAW {.importc, header: "<linux/can.h>".}: cint
+  AF_CAN {.importc, header: "<sys/socket.h>".}: cushort
+  FIONBIO {.importc, header: "<sys/ioctl.h>".}: cint
+  SOL_CAN_RAW {.importc, header: "<linux/can/raw.h>".}: cint
+  CAN_RAW_LOOPBACK {.importc, header: "<linux/can/raw.h>".}: cint
+  CAN_RAW_FILTER {.importc, header: "<linux/can/raw.h>".}: cint
+  CAN_INV_FILTER {.importc, header: "<linux/can.h>".}: cuint
+  CAN_EFF_FLAG* {.importc, header: "<linux/can.h>".}: cuint
+  CAN_RTR_FLAG* {.importc, header: "<linux/can.h>".}: cuint
+  CAN_ERR_FLAG* {.importc, header: "<linux/can.h>".}: cuint
+  CAN_SFF_MASK* {.importc, header: "<linux/can.h>".}: cuint
+  CAN_EFF_MASK* {.importc, header: "<linux/can.h>".}: cuint
+  CAN_ERR_MASK* {.importc, header: "<linux/can.h>".}: cuint
 
 type
-  sockaddr_can {.importc: "struct sockaddr_can", header: "<linux/can.h>"} = object
+  sockaddr_can {.importc: "struct sockaddr_can", header: "<linux/can.h>".} = object
     can_family {.importc.}: cushort
     can_ifindex {.importc.}: cint
 
-  can_frame {.importc: "struct can_frame", header: "<linux/can.h>"} = object
+  can_frame {.importc: "struct can_frame", header: "<linux/can.h>".} = object
     can_id {.importc.}: uint32
     len {.importc.}: uint8
     data {.importc.}: array[8, uint8]
 
-  can_filter* {.importc: "struct can_filter", header: "<linux/can.h>"} = object
+  can_filter* {.importc: "struct can_filter", header: "<linux/can.h>".} = object
     can_id {.importc.}: uint32
     can_mask {.importc.}: uint32
 
