@@ -109,13 +109,10 @@ proc close*(self: AsyncCANSocket) =
 func isOpened*(self: CANSocket | AsyncCanSocket): bool =
   self.isOpened
 
-func getHandle*(self: CANSocket): SocketHandle =
+func getHandle*(self: CANSocket | AsyncCANSocket): SocketHandle =
   doAssert self.isOpened
-  self.handle
-
-func getHandle*(self: AsyncCANSocket): SocketHandle =
-  doAssert self.isOpened
-  self.handle.SocketHandle
+  result = when self is AsyncCANSocket: self.handle.SocketHandle
+    else: self.handle
 
 proc createCANSocketHandle(name: string): SocketHandle =
   result = createNativeSocket(PF_CAN, posix.SOCK_RAW, CAN_RAW)
@@ -162,13 +159,10 @@ proc parseRawFrame(raw: can_frame): CANFrame =
   result.len = raw.len.int
   result.data = raw.data
 
-template get_handle(self: CANSocket | AsyncCANSocket): SocketHandle =
-  result = when self is AsyncCANSocket: self.handle.SocketHandle else: self.handle
-
 proc set_loopback*(self: CANSocket | AsyncCANSocket, enable: bool) =
   let
     val: int = if enable: 1 else: 0
-    handle = self.get_handle()
+    handle = self.getHandle()
   setSockOptInt(handle, SOL_CAN_RAW.int, CAN_RAW_LOOPBACK.int, val)
 
 proc can_filter_standard*(can_id: uint16, invert = false): can_filter =
@@ -185,7 +179,7 @@ proc can_filter_extended*(can_id: uint32, invert = false): can_filter =
 
 proc set_filter*(self: CANSocket | AsyncCANSocket, rfilter: openArray[can_filter]): bool =
   let
-    handle = self.get_handle()
+    handle = self.getHandle()
     filterLen = (rfilter[0].sizeof * rfilter.len).SockLen
   let res = setsockopt(handle, SOL_CAN_RAW.cint, CAN_RAW_FILTER.cint,
       addr rfilter[0], filterLen)
