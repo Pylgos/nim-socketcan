@@ -6,6 +6,8 @@ let
   CAN_RAW {.importc, header: "<linux/can.h>"}: cint
   AF_CAN {.importc, header: "<sys/socket.h>"}: cushort
   FIONBIO {.importc, header: "<sys/ioctl.h>"}: cint
+  SOL_CAN_RAW {.importc, header: "<linux/can/raw.h>"}: cint
+  CAN_RAW_LOOPBACK {.importc, header: "<linux/can/raw.h>"}: cint
 
 type
   sockaddr_can {.importc: "struct sockaddr_can", header: "<linux/can.h>"} = object
@@ -147,6 +149,11 @@ proc parseRawFrame(raw: can_frame): CANFrame =
   result.id = raw.can_id.bitsliced(IdSlice).CANId
   result.len = raw.len.int
   result.data = raw.data
+
+proc set_loopback*(self: CANSocket | AsyncCANSocket, enable: bool) =
+  let val: int = if enable: 1 else: 0
+  let handle = when self is AsyncCANSocket: self.handle.SocketHandle else: self.handle
+  setSockOptInt(handle, SOL_CAN_RAW.int, CAN_RAW_LOOPBACK.int, val)
 
 proc read*(self: CANSocket): Option[CANFrame] =
   var raw: can_frame
